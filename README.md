@@ -1,4 +1,4 @@
-<h1 align="center">dota2-bot-rust</h1>
+<h1 align="center">dota2-rust-bot</h1>
 
 <p align="center">
   Explore live Dota 2 matches and tournament history in a Telegram bot and Mini App.
