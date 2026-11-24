@@ -1,0 +1,10 @@
+# Local secrets and runtime data
+.env
+.env.*
+!.env.example
+data/
+/target/
+.vscode/
+
+# Generated Graphify output
+graphify-out/

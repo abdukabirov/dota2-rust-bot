@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f23">
+  <title>Dota Live</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Russo+One&display=swap" rel="stylesheet">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{
+      color-scheme:dark;
+      --bg:#0f0f23;--surface:#1e1c35;--surface-raised:#27253f;--border:#393650;
+      --text:#f4f1ff;--muted:#b3adc8;--accent:#a78bfa;--action:#f43f5e;
+      --radiant:#69d69b;--dire:#ff7988;--focus:#c4b5fd;
+      --display:"Russo One",system-ui,sans-serif;--body:"Chakra Petch",system-ui,sans-serif;
+      --gap:12px;--radius:16px
+    }
+    *{box-sizing:border-box}
+    html{min-height:100%;background:var(--bg);scroll-behavior:smooth}
+    body{min-width:320px;min-height:100vh;margin:0;background:var(--bg);color:var(--text);font:500 16px/1.45 var(--body)}
+    button{min-height:48px;color:inherit;font:inherit;touch-action:manipulation}
+    button:disabled{cursor:wait;opacity:.72}
+    button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+    img{display:block}
+    [hidden]{display:none!important}
+    .app{width:min(100%,760px);min-height:100vh;margin:0 auto;padding:calc(16px + var(--tg-safe-area-inset-top,env(safe-area-inset-top,0px)) + var(--tg-content-safe-area-inset-top,0px)) max(16px,var(--tg-safe-area-inset-right,env(safe-area-inset-right,0px))) calc(28px + var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)) + var(--tg-content-safe-area-inset-bottom,0px)) max(16px,var(--tg-safe-area-inset-left,env(safe-area-inset-left,0px)))}
+    .topbar{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+    .brand-mark{display:grid;width:44px;height:44px;place-items:center;flex:none;border:1px solid #6c549f;border-radius:14px;background:#1a1730;color:var(--accent);font:15px var(--display);letter-spacing:-1px}
+    .brand-copy{min-width:0;flex:1}
+    .eyebrow{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+    h1,h2,h3,p{margin:0}
+    h1{margin-top:3px;font:22px/1.2 var(--display);letter-spacing:.1px}
+    .live-summary{display:grid;justify-items:end;gap:3px}
+    .live-label{display:flex;align-items:center;gap:7px;color:var(--radiant);font-size:12px;font-weight:700;letter-spacing:1px}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:var(--radiant);box-shadow:0 0 12px #69d69b80}
+    .match-count{color:var(--muted);font-size:12px}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .section-label{color:var(--muted);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+    .refresh{display:grid;width:48px;height:48px;place-items:center;border:1px solid var(--border);border-radius:14px;background:var(--surface);cursor:pointer;transition:background .16s ease,transform .16s ease}
+    .refresh:hover{background:var(--surface-raised)}
+    .refresh:active{transform:scale(.96)}
+    .refresh svg{width:20px;height:20px;color:var(--accent)}
+    .refresh[aria-busy="true"] svg{animation:spin .8s linear infinite}
+    .status{min-height:24px;margin:0 0 8px;color:var(--muted);font-size:13px}
+    .status.error{color:#ff9aa6}
+    .match-list{display:grid;gap:10px}
+    .match-card{display:grid;width:100%;gap:12px;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:linear-gradient(130deg,#a78bfa0b,transparent 58%),var(--surface);text-align:left;cursor:pointer;transition:border-color .16s ease,background .16s ease,transform .16s ease}
+    .match-card:hover{border-color:#7560a4;background-color:var(--surface-raised)}
+    .match-card:active{transform:scale(.99)}
+    .league-row{display:flex;align-items:center;gap:9px;min-width:0}
+    .league-mark{display:grid;width:30px;height:30px;place-items:center;flex:none;border:1px solid #6c549f;border-radius:9px;background:#17152b;color:var(--accent);font:10px var(--display)}
+    .league-name{min-width:0;flex:1;overflow:hidden;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.6px;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}
+    .live-tag{display:flex;align-items:center;gap:5px;flex:none;padding:4px 8px;border:1px solid #69d69b44;border-radius:20px;color:var(--radiant);font-size:11px;font-weight:700;letter-spacing:.5px}
+    .live-tag .live-dot{width:6px;height:6px;box-shadow:none}
+    .view-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+    .view-tab{border:1px solid var(--border);border-radius:12px;background:var(--surface);font-weight:700;cursor:pointer}
+    .view-tab[aria-pressed="true"]{border-color:#6c549f;background:#28213e;color:var(--focus)}
+    .tournament-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+    .tournament-filter{min-height:40px;padding:0 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);font-size:13px;font-weight:700;cursor:pointer}
+    .tournament-filter[aria-pressed="true"]{border-color:#6c549f;background:#28213e;color:var(--focus)}
+    .tournament-card{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:58px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);text-align:left;cursor:pointer}
+    .tournament-card:hover{border-color:#7560a4;background:var(--surface-raised)}
+    .tournament-name{min-width:0;overflow:hidden;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+    .tournament-id{flex:none;color:var(--muted);font-size:12px}
+    .history-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px}
+    .history-page-button{min-height:40px;padding:0 12px;border:1px solid var(--border);border-radius:11px;background:var(--surface);font-weight:700;cursor:pointer}
+    .history-page-button:disabled{cursor:default;opacity:.5}
+    .history-page-label{min-width:70px;color:var(--muted);font-size:13px;text-align:center}
+    .match-meta{display:flex;align-items:center;justify-content:flex-end;gap:7px;margin-top:-5px;color:var(--muted);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+    .match-meta-item{display:inline-flex;align-items:center;min-height:22px;padding:3px 7px;border:1px solid #393650;border-radius:20px}
+    .matchup{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}
+    .team{display:flex;align-items:center;gap:9px;min-width:0}
+    .team.dire{flex-direction:row-reverse;text-align:right}
+    .team-logo{position:relative;display:grid;width:42px;height:42px;place-items:center;flex:none;overflow:hidden;border:1px solid #69d69b44;border-radius:13px;background:#69d69b12;color:var(--radiant);font:12px var(--display)}
+    .team-logo.dire{border-color:#ff798844;background:#ff798812;color:var(--dire)}
+    .team-logo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:4px}
+    .team-name{min-width:0;overflow:hidden;font-size:15px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
+    .score{display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--border);border-radius:11px;background:#111020;color:var(--text);font:17px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .score-separator{color:var(--muted);font:14px var(--body)}
+    .empty,.error-panel{display:grid;justify-items:center;gap:8px;padding:30px 20px;border:1px dashed var(--border);border-radius:var(--radius);background:#1e1c3577;text-align:center}
+    .empty-mark{display:grid;width:48px;height:48px;place-items:center;border:1px solid var(--border);border-radius:15px;color:var(--accent)}
+    .empty h2,.error-panel h2{font:18px var(--display)}
+    .empty p,.error-panel p{max-width:34ch;color:var(--muted);font-size:14px}
+    .retry{margin-top:6px;padding:0 18px;border:1px solid #6c549f;border-radius:12px;background:#28213e;color:var(--text);font-weight:700;cursor:pointer}
+    .skeleton{height:124px;border-radius:var(--radius);background:linear-gradient(100deg,var(--surface) 30%,#2b2944 48%,var(--surface) 68%);background-size:220% 100%;animation:shimmer 1.4s ease-in-out infinite}
+    .detail{display:grid;gap:14px}
+    .detail-head{display:flex;align-items:center;gap:12px}
+    .back{display:flex;align-items:center;gap:8px;flex:none;padding:0 13px;border:1px solid var(--border);border-radius:13px;background:var(--surface);font-weight:700;cursor:pointer}
+    .back svg{width:18px;height:18px;color:var(--accent)}
+    .detail-title{min-width:0;flex:1}
+    .detail-league{overflow:hidden;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.8px;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}
+    .detail-title h2{margin-top:2px;font:18px var(--display)}
+    .scoreboard{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:17px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+    .score-side{display:grid;justify-items:center;gap:8px;min-width:0;text-align:center}
+    .score-side .team-logo{width:56px;height:56px;border-radius:16px}
+    .score-side .team-name{max-width:100%;font-size:14px}
+    .detail-score{font:24px var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .draft-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .draft-side{display:grid;align-content:start;gap:12px;min-width:0;padding:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+    .faction{overflow:hidden;font:13px var(--display);letter-spacing:.35px;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}
+    .faction.radiant{color:var(--radiant)}
+    .faction.dire{color:var(--dire)}
+    .draft-block{display:grid;gap:8px}
+    .draft-label{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+    .hero-list{display:grid;gap:6px}
+    .hero{display:flex;align-items:center;gap:9px;min-width:0;min-height:48px;padding:5px 7px;border:1px solid #ffffff0d;border-radius:11px;background:#111020}
+    .hero-portrait{display:grid;width:38px;height:38px;place-items:center;flex:none;overflow:hidden;border:1px solid #6c549f55;border-radius:10px;background:#a78bfa14;color:var(--accent);font:11px var(--display)}
+    .hero-portrait img{width:100%;height:100%;object-fit:cover}
+    .hero-name{min-width:0;overflow:hidden;font-size:14px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+    .no-data{padding:9px 0;color:var(--muted);font-size:13px}
+    .footer-note{margin-top:18px;color:#928ba8;font-size:12px;text-align:center}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes shimmer{to{background-position-x:-220%}}
+    @media(min-width:700px){.app{padding-right:24px;padding-left:24px}.match-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:420px){.draft-grid{grid-template-columns:1fr}.team{gap:7px}.team-logo{width:36px;height:36px;border-radius:11px}.team-name{font-size:13px}.score{gap:5px;padding:6px 7px;font-size:15px}.match-card{padding:12px}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true">DOTA</div>
+      <div class="brand-copy">
+        <div class="eyebrow">PRO CIRCUIT</div>
+        <h1 id="appTitle">Архив турниров</h1>
+      </div>
+      <div class="live-summary">
+        <div class="live-label"><span class="live-dot" aria-hidden="true"></span><span id="modeLabel">АРХИВ</span></div>
+        <div id="matchCount" class="match-count" aria-live="polite">Загрузка…</div>
+      </div>
+    </header>
+    <nav class="view-tabs" aria-label="Разделы">
+      <button id="liveTab" class="view-tab" type="button" aria-pressed="false">Live матчи</button>
+      <button id="archiveTab" class="view-tab" type="button" aria-pressed="true">Архив турниров</button>
+    </nav>
+    <section id="listScreen" aria-label="Список live-матчей" hidden>
+      <div class="toolbar">
+        <div class="section-label">Матчи высшего уровня</div>
+        <button id="refreshButton" class="refresh" type="button" aria-label="Обновить список матчей" title="Обновить">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4.6 9a7.5 7.5 0 0 1 12.7-2L20 12M4 17v-5h5"/><path d="M19.4 15a7.5 7.5 0 0 1-12.7 2L4 12"/></svg>
+        </button>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <div id="matchList" class="match-list"></div>
+      <div id="emptyState" class="empty" hidden>
+        <div class="empty-mark" aria-hidden="true">D2</div>
+        <h2>Сейчас матчей нет</h2>
+        <p>Матчи турниров высшего уровня появятся здесь, когда начнутся.</p>
+        <button id="emptyArchiveButton" class="retry" type="button">Открыть архив турниров</button>
+      </div>
+      <div id="errorState" class="error-panel" hidden>
+        <h2>Не удалось загрузить матчи</h2>
+        <p id="errorMessage">Проверьте соединение и попробуйте ещё раз.</p>
+        <button id="retryButton" class="retry" type="button">Повторить</button>
+      </div>
+    </section>
+    <section id="historyScreen" aria-label="Архив турниров">
+      <div class="toolbar">
+        <div class="section-label">История турниров</div>
+        <button id="refreshTournaments" class="refresh" type="button" aria-label="Обновить список турниров" title="Обновить">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4.6 9a7.5 7.5 0 0 1 12.7-2L20 12M4 17v-5h5"/><path d="M19.4 15a7.5 7.5 0 0 1-12.7 2L4 12"/></svg>
+        </button>
+      </div>
+      <div id="tournamentFilters" class="tournament-filters" aria-label="Серия турниров">
+        <button class="tournament-filter" type="button" data-series="BLAST" aria-pressed="true">BLAST</button>
+        <button class="tournament-filter" type="button" data-series="ESL" aria-pressed="false">ESL</button>
+        <button class="tournament-filter" type="button" data-series="The International" aria-pressed="false">The International</button>
+        <button class="tournament-filter" type="button" data-series="DreamLeague" aria-pressed="false">DreamLeague</button>
+      </div>
+      <p id="historyStatus" class="status" role="status" aria-live="polite"></p>
+      <div id="tournamentList" class="match-list"></div>
+      <button id="historyBackButton" class="back" type="button" hidden>К турнирам</button>
+      <div id="historyMatchList" class="match-list" hidden></div>
+      <div id="historyPagination" class="history-pagination" hidden>
+        <button id="historyPrev" class="history-page-button" type="button">Назад</button>
+        <span id="historyPageLabel" class="history-page-label"></span>
+        <button id="historyNext" class="history-page-button" type="button">Дальше</button>
+      </div>
+    </section>
+    <section id="detailScreen" class="detail" aria-label="Счёт и драфт матча" hidden>
+      <div class="detail-head">
+        <button id="backButton" class="back" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          К матчам
+        </button>
+        <div class="detail-title">
+          <div id="detailLeague" class="detail-league"></div>
+          <h2 id="detailHeading">Составы и драфт</h2>
+        </div>
+      </div>
+      <p id="detailStatus" class="status" role="status" aria-live="polite"></p>
+      <div id="scoreboard" class="scoreboard"></div>
+      <div id="draftGrid" class="draft-grid"></div>
+    </section>
+    <div class="footer-note">Архив матчей: OpenDota</div>
+  </main>
+  <script>
+    (() => {
+      const tg = window.Telegram?.WebApp;
+      const listScreen = document.getElementById("listScreen");
+      const historyScreen = document.getElementById("historyScreen");
+      const detailScreen = document.getElementById("detailScreen");
+      const matchList = document.getElementById("matchList");
+      const status = document.getElementById("status");
+      const refreshButton = document.getElementById("refreshButton");
+      const count = document.getElementById("matchCount");
+      const historyStatus = document.getElementById("historyStatus");
+      let matches = [];
+      let tournaments = [];
+      let historyMatches = [];
+      let selectedSeriesMatches = [];
+      let historyPageCount = 0;
+      let selectedTournament = null;
+      let historyPage = 0;
+      let selectedId = null;
+      let selectedMapNumber = null;
+      let selectedOrigin = null;
+      let returnScreen = "live";
+      let currentView = "history";
+      let selectedSeries = "BLAST";
+      let busy = false;
+      let historyBusy = false;
+      const historyPageSize = 20;
+
+      tg?.ready();
+      tg?.expand();
+      tg?.setHeaderColor?.("#0f0f23");
+      tg?.setBackgroundColor?.("#0f0f23");
+
+      function node(tag, className, value) {
+        const element = document.createElement(tag);
+        if (className) element.className = className;
+        if (value !== undefined) element.textContent = value;
+        return element;
+      }
+
+      function initials(name) {
+        return String(name || "Dota").trim().split(/\s+/).slice(0, 2)
+          .map(part => Array.from(part)[0] || "").join("").toUpperCase();
+      }
+
+      function matchWord(value) {
+        const remainder = value % 10;
+        const lastTwo = value % 100;
+        if (lastTwo >= 11 && lastTwo <= 14) return "матчей";
+        if (remainder === 1) return "матч";
+        return remainder >= 2 && remainder <= 4 ? "матча" : "матчей";
+      }
+
+      function mapWord(value) {
+        const remainder = value % 10;
+        const lastTwo = value % 100;
+        if (lastTwo >= 11 && lastTwo <= 14) return "карт";
+        if (remainder === 1) return "карта";
+        return remainder >= 2 && remainder <= 4 ? "карты" : "карт";
+      }
+
+      function apiHeaders() {
+        return {
+          Accept: "application/json",
+          Authorization: "tma " + (tg?.initData || "")
+        };
+      }
+
+      function formatElapsed(startedAt) {
+        const start = Date.parse(startedAt);
+        if (!Number.isFinite(start)) return "Время обновляется";
+        const seconds = Math.max(0, Math.floor((Date.now() - start) / 1000));
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return hours > 0 ? hours + ":" + String(minutes).padStart(2, "0") : minutes + " мин.";
+      }
+
+      function safeImageUrl(value) {
+        try {
+          const url = new URL(value);
+          return url.protocol === "https:" ? url.href : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function teamLogo(team, side) {
+        const name = team?.name || (side === "radiant" ? "Radiant" : "Dire");
+        const wrapper = node("span", "team-logo " + side);
+        wrapper.setAttribute("aria-hidden", "true");
+        wrapper.appendChild(node("span", "", initials(name)));
+        const imageUrl = safeImageUrl(team?.logo_url);
+        if (imageUrl) {
+          const image = node("img");
+          image.src = imageUrl;
+          image.alt = "";
+          image.loading = "lazy";
+          image.decoding = "async";
+          image.referrerPolicy = "no-referrer";
+          image.addEventListener("error", () => image.remove(), { once: true });
+          wrapper.appendChild(image);
+        }
+        return wrapper;
+      }
+
+      function teamView(team, side) {
+        const wrapper = node("div", "team " + side);
+        wrapper.appendChild(teamLogo(team, side));
+        wrapper.appendChild(node("span", "team-name", team?.name || side));
+        return wrapper;
+      }
+
+      function renderList() {
+        matchList.replaceChildren();
+        document.getElementById("emptyState").hidden = matches.length > 0;
+        count.textContent = matches.length + " " + matchWord(matches.length);
+        for (const match of matches) {
+          const card = node("button", "match-card");
+          card.type = "button";
+          card.setAttribute("aria-label", "Открыть драфт: " +
+            (match.radiant?.name || "Radiant") + " — " + (match.dire?.name || "Dire"));
+          const league = node("div", "league-row");
+          league.appendChild(node("span", "league-mark", initials(match.tournament || "Dota")));
+          league.appendChild(node("span", "league-name", match.tournament || "PRO TOURNAMENT"));
+          const badge = node("span", "live-tag");
+          badge.appendChild(node("span", "live-dot"));
+          badge.appendChild(node("span", "", "LIVE"));
+          league.appendChild(badge);
+          const matchup = node("div", "matchup");
+          matchup.appendChild(teamView(match.radiant, "radiant"));
+          const score = node("span", "score");
+          score.appendChild(node("span", "", match.radiant?.score ?? 0));
+          score.appendChild(node("span", "score-separator", ":"));
+          score.appendChild(node("span", "", match.dire?.score ?? 0));
+          matchup.appendChild(score);
+          matchup.appendChild(teamView(match.dire, "dire"));
+          const meta = node("div", "match-meta");
+          meta.appendChild(node("span", "match-meta-item", "ID " + String(match.id)));
+          meta.appendChild(node("span", "match-meta-item", formatElapsed(match.started_at)));
+          card.append(league, matchup, meta);
+          card.addEventListener("click", () => openMatch(match, "live"));
+          matchList.appendChild(card);
+        }
+      }
+
+      function renderTournaments() {
+        const list = document.getElementById("tournamentList");
+        list.replaceChildren();
+        const filtered = tournaments.filter(tournament => tournament.series === selectedSeries);
+        for (const tournament of filtered) {
+          const card = node("button", "tournament-card");
+          card.type = "button";
+          card.append(
+            node("span", "tournament-name", tournament.name),
+            node("span", "tournament-id", "ID " + tournament.id)
+          );
+          card.addEventListener("click", () => loadTournamentMatches(tournament));
+          list.appendChild(card);
+        }
+        count.textContent = filtered.length + " турниров";
+        if (!filtered.length && !historyBusy) {
+          list.appendChild(node("div", "empty", "Турниры этой серии не найдены в OpenDota."));
+        }
+      }
+
+      async function loadTournaments() {
+        if (historyBusy) return;
+        historyBusy = true;
+        historyStatus.classList.remove("error");
+        historyStatus.textContent = "Загружаем турниры…";
+        document.getElementById("tournamentList").replaceChildren();
+        try {
+          const response = await fetch("/api/tournaments", {
+            headers: apiHeaders(),
+            cache: "no-store"
+          });
+          if (response.status === 401) throw new Error("Откройте Mini App кнопкой /live в личном чате с ботом.");
+          if (!response.ok) throw new Error("Не удалось загрузить список турниров.");
+          const payload = await response.json();
+          if (!Array.isArray(payload)) throw new Error("Сервис вернул некорректный список турниров.");
+          tournaments = payload;
+          historyStatus.textContent = "";
+          renderTournaments();
+        } catch (error) {
+          historyStatus.textContent = error.message || "Не удалось загрузить турниры.";
+          historyStatus.classList.add("error");
+        } finally {
+          historyBusy = false;
+        }
+      }
+
+      async function loadTournamentMatches(tournament) {
+        if (historyBusy) return;
+        historyBusy = true;
+        selectedTournament = tournament;
+        const list = document.getElementById("historyMatchList");
+        document.getElementById("tournamentFilters").hidden = true;
+        document.getElementById("tournamentList").hidden = true;
+        document.getElementById("historyBackButton").hidden = false;
+        list.hidden = false;
+        document.getElementById("historyPagination").hidden = true;
+        list.replaceChildren(...Array.from({ length: 3 }, () => node("div", "skeleton")));
+        historyStatus.classList.remove("error");
+        historyStatus.textContent = "Загружаем матчи: " + tournament.name + "…";
+        try {
+          const response = await fetch("/api/tournaments/" + encodeURIComponent(tournament.id) + "/matches", {
+            headers: apiHeaders(),
+            cache: "no-store"
+          });
+          if (response.status === 401) throw new Error("Откройте Mini App кнопкой /live в личном чате с ботом.");
+          if (!response.ok) throw new Error("Не удалось загрузить матчи турнира.");
+          const payload = await response.json();
+          if (!Array.isArray(payload)) throw new Error("Сервис вернул некорректный список матчей.");
+          historyMatches = payload;
+          historyPage = 0;
+          renderHistoryMatches(tournament);
+          historyStatus.textContent = historyMatches.length
+            ? tournament.name + " · " + historyMatches.length + " " + matchWord(historyMatches.length)
+            : "Для этого турнира OpenDota пока не вернула матчи.";
+        } catch (error) {
+          list.replaceChildren();
+          historyStatus.textContent = error.message || "Не удалось загрузить матчи турнира.";
+          historyStatus.classList.add("error");
+        } finally {
+          historyBusy = false;
+        }
+      }
+
+      function renderHistoryMatches(tournament) {
+        const list = document.getElementById("historyMatchList");
+        list.replaceChildren();
+        const groups = new Map();
+        for (const match of historyMatches) {
+          const seriesId = Number(match.series_id);
+          const key = Number.isSafeInteger(seriesId) && seriesId > 0
+            ? "series:" + seriesId
+            : "match:" + match.id;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(match);
+        }
+        const series = Array.from(groups.entries(), ([id, matches]) => ({
+          id,
+          matches: matches.sort((left, right) =>
+            Date.parse(left.started_at || 0) - Date.parse(right.started_at || 0))
+        })).sort((left, right) =>
+          Date.parse(right.matches[right.matches.length - 1]?.started_at || 0) -
+          Date.parse(left.matches[left.matches.length - 1]?.started_at || 0));
+        const pageCount = Math.ceil(series.length / historyPageSize);
+        historyPageCount = pageCount;
+        const start = historyPage * historyPageSize;
+        for (const group of series.slice(start, start + historyPageSize)) {
+          const first = group.matches[0];
+          const radiantKey = first.radiant?.team_id || first.radiant?.name || "radiant";
+          const direKey = first.dire?.team_id || first.dire?.name || "dire";
+          let radiantWins = 0;
+          let direWins = 0;
+          for (const match of group.matches) {
+            if (match.radiant_win === undefined || match.radiant_win === null) continue;
+            const winner = match.radiant_win ? match.radiant : match.dire;
+            const winnerKey = winner?.team_id || winner?.name;
+            if (winnerKey === radiantKey) radiantWins++;
+            else if (winnerKey === direKey) direWins++;
+          }
+          const card = node("button", "match-card");
+          card.type = "button";
+          card.setAttribute("aria-label", "Открыть серию: " +
+            (first.radiant?.name || "Radiant") + " — " + (first.dire?.name || "Dire"));
+          const league = node("div", "league-row");
+          league.append(
+            node("span", "league-mark", initials(tournament.series)),
+            node("span", "league-name",
+              tournament.name + " · " + group.matches.length + " " + mapWord(group.matches.length))
+          );
+          const matchup = node("div", "matchup");
+          matchup.append(
+            teamView(first.radiant, "radiant"),
+            node("span", "score", radiantWins + " : " + direWins),
+            teamView(first.dire, "dire")
+          );
+          const meta = node("div", "match-meta");
+          const lastMatch = group.matches[group.matches.length - 1];
+          const start = lastMatch.started_at ? Date.parse(lastMatch.started_at) : NaN;
+          meta.append(
+            node("span", "match-meta-item",
+              group.id.startsWith("series:")
+                ? "Серия " + group.id.slice("series:".length)
+                : "Один матч"),
+            node("span", "match-meta-item", Number.isFinite(start)
+              ? new Date(start).toLocaleDateString("ru-RU")
+              : "Дата неизвестна")
+          );
+          card.append(league, matchup, meta);
+          card.addEventListener("click", () => showSeriesMaps(group));
+          list.appendChild(card);
+        }
+        const pagination = document.getElementById("historyPagination");
+        pagination.hidden = pageCount < 2;
+        document.getElementById("historyPageLabel").textContent =
+          (historyPage + 1) + " / " + pageCount;
+        document.getElementById("historyPrev").disabled = historyPage === 0;
+        document.getElementById("historyNext").disabled = historyPage + 1 >= pageCount;
+      }
+
+      function showSeriesMaps(group) {
+        selectedSeriesMatches = group.matches;
+        historyPage = 0;
+        historyPageCount = Math.ceil(selectedSeriesMatches.length / historyPageSize);
+        document.getElementById("tournamentFilters").hidden = true;
+        document.getElementById("tournamentList").hidden = true;
+        document.getElementById("historyBackButton").hidden = false;
+        document.getElementById("historyBackButton").textContent = "К сериям";
+        document.getElementById("historyMatchList").hidden = false;
+        historyStatus.textContent = "Карты серии · " +
+          selectedSeriesMatches.length + " " + mapWord(selectedSeriesMatches.length);
+        renderSeriesMaps();
+      }
+
+      function renderSeriesMaps() {
+        const list = document.getElementById("historyMatchList");
+        list.replaceChildren();
+        const pageCount = Math.ceil(selectedSeriesMatches.length / historyPageSize);
+        historyPageCount = pageCount;
+        const start = historyPage * historyPageSize;
+        for (const [index, match] of selectedSeriesMatches
+          .slice(start, start + historyPageSize).entries()) {
+          const card = node("button", "match-card");
+          card.type = "button";
+          card.setAttribute("aria-label", "Открыть карту " + (start + index + 1));
+          const league = node("div", "league-row");
+          league.append(
+            node("span", "league-mark", String(start + index + 1)),
+            node("span", "league-name", "Карта " + (start + index + 1))
+          );
+          const matchup = node("div", "matchup");
+          matchup.append(
+            teamView(match.radiant, "radiant"),
+            node("span", "score", (match.radiant?.score ?? 0) + " : " + (match.dire?.score ?? 0)),
+            teamView(match.dire, "dire")
+          );
+          const meta = node("div", "match-meta");
+          const time = match.started_at ? Date.parse(match.started_at) : NaN;
+          meta.append(
+            node("span", "match-meta-item", "ID " + match.id),
+            node("span", "match-meta-item", Number.isFinite(time)
+              ? new Date(time).toLocaleDateString("ru-RU")
+              : "Дата неизвестна")
+          );
+          card.append(league, matchup, meta);
+          card.addEventListener("click", () => openMatch(match, "history", start + index + 1));
+          list.appendChild(card);
+        }
+        const pagination = document.getElementById("historyPagination");
+        pagination.hidden = pageCount < 2;
+        document.getElementById("historyPageLabel").textContent =
+          (historyPage + 1) + " / " + pageCount;
+        document.getElementById("historyPrev").disabled = historyPage === 0;
+        document.getElementById("historyNext").disabled = historyPage + 1 >= pageCount;
+      }
+
+      function renderDraft(team, side) {
+        const column = node("section", "draft-side");
+        const teamName = team?.name || (side === "radiant" ? "Radiant" : "Dire");
+        column.setAttribute("aria-label", teamName + ", " + (side === "radiant" ? "Radiant" : "Dire"));
+        column.appendChild(node("h3", "faction " + side, teamName));
+        for (const [isPick, label] of [[true, "Пики"], [false, "Баны"]]) {
+          const block = node("div", "draft-block");
+          block.appendChild(node("div", "draft-label", label));
+          const actions = (selectedMatch?.draft || []).filter(action =>
+            action.is_radiant === (side === "radiant") && action.is_pick === isPick);
+          if (!actions.length) {
+            block.appendChild(node("div", "no-data", isPick ? "Пики пока не переданы" : "Нет данных о банах"));
+          } else {
+            const list = node("div", "hero-list");
+            for (const action of actions) {
+              const row = node("div", "hero");
+              const heroName = action.hero_name || ("Hero #" + String(action.hero_id || "?"));
+              const portrait = node("span", "hero-portrait");
+              portrait.setAttribute("aria-hidden", "true");
+              portrait.appendChild(node("span", "", initials(heroName)));
+              const imageUrl = safeImageUrl(action.hero_image_url);
+              if (imageUrl) {
+                const image = node("img");
+                image.src = imageUrl;
+                image.alt = "";
+                image.loading = "lazy";
+                image.decoding = "async";
+                image.referrerPolicy = "no-referrer";
+                image.addEventListener("error", () => image.remove(), { once: true });
+                portrait.appendChild(image);
+              }
+              row.append(portrait, node("span", "hero-name", heroName));
+              list.appendChild(row);
+            }
+            block.appendChild(list);
+          }
+          column.appendChild(block);
+        }
+        return column;
+      }
+
+      let selectedMatch = null;
+      function renderDetail() {
+        if (!selectedMatch) return;
+        document.getElementById("detailHeading").textContent = selectedMapNumber
+          ? "Карта " + selectedMapNumber + " · составы и драфт"
+          : "Составы и драфт";
+        document.getElementById("detailLeague").textContent = selectedMatch.tournament || "DOTA 2 · LIVE";
+        const board = document.getElementById("scoreboard");
+        board.replaceChildren();
+        for (const [team, side] of [[selectedMatch.radiant, "radiant"], [selectedMatch.dire, "dire"]]) {
+          const panel = node("div", "score-side");
+          panel.appendChild(teamLogo(team, side));
+          panel.appendChild(node("span", "team-name", team?.name || side));
+          if (side === "radiant") board.appendChild(panel);
+          else {
+            board.appendChild(node("div", "detail-score",
+              (selectedMatch.radiant?.score ?? 0) + " : " + (selectedMatch.dire?.score ?? 0)));
+            board.appendChild(panel);
+          }
+        }
+        const draft = document.getElementById("draftGrid");
+        draft.replaceChildren(renderDraft(selectedMatch.radiant || {}, "radiant"),
+          renderDraft(selectedMatch.dire || {}, "dire"));
+      }
+
+      async function loadMatchDetails(match) {
+        const detailStatus = document.getElementById("detailStatus");
+        detailStatus.classList.remove("error");
+        detailStatus.textContent = "Загружаем пики и баны карты…";
+        const requestedId = match.id;
+        try {
+          const response = await fetch("/api/matches/" + encodeURIComponent(requestedId), {
+            headers: apiHeaders(),
+            cache: "no-store"
+          });
+          if (response.status === 401) {
+            throw new Error("Сессия Telegram устарела. Закройте Mini App и откройте его заново через /live.");
+          }
+          if (!response.ok) throw new Error("OpenDota не вернула подробности этой карты.");
+          const payload = await response.json();
+          if (selectedId !== requestedId || selectedOrigin === null) return;
+          selectedMatch = payload;
+          renderDetail();
+          detailStatus.textContent = payload.draft?.length
+            ? "Драфт этой карты"
+            : "OpenDota не передала пики и баны для этой карты.";
+        } catch (error) {
+          if (selectedId !== requestedId) return;
+          detailStatus.textContent = error.message || "Не удалось загрузить подробности карты.";
+          detailStatus.classList.add("error");
+        }
+      }
+
+      function switchView(view) {
+        currentView = view;
+        returnScreen = view;
+        selectedId = null;
+        selectedOrigin = null;
+        selectedMatch = null;
+        detailScreen.hidden = true;
+        selectedMapNumber = null;
+        document.getElementById("backButton").textContent =
+          returnScreen === "history" ? "К картам" : "К матчам";
+        listScreen.hidden = view !== "live";
+        historyScreen.hidden = view !== "history";
+        document.getElementById("liveTab").setAttribute("aria-pressed", String(view === "live"));
+        document.getElementById("archiveTab").setAttribute("aria-pressed", String(view === "history"));
+        document.getElementById("appTitle").textContent = view === "live" ? "Live матчи" : "Архив турниров";
+        document.getElementById("modeLabel").textContent = view === "live" ? "LIVE" : "АРХИВ";
+        tg?.BackButton?.hide();
+        if (view === "live") {
+          renderList();
+          loadMatches();
+        } else {
+          backToTournamentList();
+          if (!tournaments.length) loadTournaments();
+          else renderTournaments();
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function showList() {
+        selectedId = null;
+        selectedMapNumber = null;
+        selectedOrigin = null;
+        selectedMatch = null;
+        detailScreen.hidden = true;
+        listScreen.hidden = returnScreen !== "live";
+        historyScreen.hidden = returnScreen !== "history";
+        tg?.BackButton?.hide();
+        matchList.setAttribute("aria-busy", "false");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function openMatch(match, origin, mapNumber = null) {
+        selectedId = match.id;
+        selectedMapNumber = mapNumber;
+        selectedOrigin = origin;
+        returnScreen = origin;
+        selectedMatch = match;
+        if (!selectedMatch) return;
+        listScreen.hidden = true;
+        historyScreen.hidden = true;
+        detailScreen.hidden = false;
+        document.getElementById("backButton").textContent =
+          origin === "history" ? "К картам" : "К матчам";
+        tg?.BackButton?.show();
+        renderDetail();
+        loadMatchDetails(match);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function backToTournamentList() {
+        document.getElementById("tournamentFilters").hidden = false;
+        document.getElementById("tournamentList").hidden = false;
+        document.getElementById("historyBackButton").hidden = true;
+        document.getElementById("historyMatchList").hidden = true;
+        document.getElementById("historyPagination").hidden = true;
+        historyMatches = [];
+        selectedSeriesMatches = [];
+        historyPageCount = 0;
+        selectedTournament = null;
+        historyPage = 0;
+        document.getElementById("historyBackButton").textContent = "К турнирам";
+        historyStatus.textContent = "";
+      }
+
+      function backToSeriesList() {
+        selectedSeriesMatches = [];
+        historyPage = 0;
+        historyPageCount = 0;
+        document.getElementById("historyBackButton").textContent = "К турнирам";
+        document.getElementById("historyMatchList").hidden = false;
+        historyStatus.textContent = historyMatches.length + " карт · выберите серию";
+        renderHistoryMatches(selectedTournament);
+      }
+
+      function backInHistory() {
+        if (selectedSeriesMatches.length) backToSeriesList();
+        else backToTournamentList();
+      }
+
+      function handleBack() {
+        if (!detailScreen.hidden) {
+          showList();
+        } else if (!historyScreen.hidden && !document.getElementById("historyBackButton").hidden) {
+          backInHistory();
+        } else if (!historyScreen.hidden) {
+          switchView("live");
+        }
+      }
+
+      async function loadMatches() {
+        if (busy) return;
+        busy = true;
+        refreshButton.setAttribute("aria-busy", "true");
+        refreshButton.disabled = true;
+        matchList.setAttribute("aria-busy", "true");
+        status.classList.remove("error");
+        status.textContent = matches.length ? "Обновляем live-матчи…" : "";
+        if (!matches.length) {
+          matchList.replaceChildren(...Array.from({ length: 3 }, () => node("div", "skeleton")));
+          count.textContent = "Загрузка…";
+        }
+        try {
+          const response = await fetch("/api/matches", {
+            headers: apiHeaders(),
+            cache: "no-store"
+          });
+          if (response.status === 401) throw new Error("Запустите Mini App кнопкой /live в личном чате с ботом.");
+          if (!response.ok) throw new Error("Сервис временно недоступен. Попробуйте ещё раз.");
+          const payload = await response.json();
+          if (!Array.isArray(payload)) throw new Error("Сервис вернул некорректный формат данных.");
+          matches = payload;
+          status.textContent = "";
+          document.getElementById("errorState").hidden = true;
+          document.getElementById("emptyState").hidden = matches.length > 0;
+          renderList();
+          if (selectedId !== null && selectedOrigin === "live") {
+            selectedMatch = matches.find(match => match.id === selectedId) || null;
+            if (selectedMatch) renderDetail();
+            else showList();
+          }
+        } catch (error) {
+          if (!matches.length) {
+            matchList.replaceChildren();
+            document.getElementById("emptyState").hidden = true;
+            document.getElementById("errorMessage").textContent = error.message || "Проверьте соединение и попробуйте ещё раз.";
+            document.getElementById("errorState").hidden = false;
+            count.textContent = "Нет данных";
+          } else {
+            status.textContent = error.message || "Не удалось обновить матчи.";
+            status.classList.add("error");
+          }
+        } finally {
+          busy = false;
+          refreshButton.removeAttribute("aria-busy");
+          refreshButton.disabled = false;
+          matchList.setAttribute("aria-busy", "false");
+        }
+      }
+
+      document.getElementById("backButton").addEventListener("click", showList);
+      document.getElementById("retryButton").addEventListener("click", loadMatches);
+      document.getElementById("emptyArchiveButton").addEventListener("click", () => switchView("history"));
+      refreshButton.addEventListener("click", loadMatches);
+      document.getElementById("liveTab").addEventListener("click", () => switchView("live"));
+      document.getElementById("archiveTab").addEventListener("click", () => switchView("history"));
+      document.querySelectorAll(".tournament-filter").forEach(button => {
+        button.addEventListener("click", () => {
+          selectedSeries = button.dataset.series;
+          document.querySelectorAll(".tournament-filter").forEach(filter => {
+            filter.setAttribute("aria-pressed", String(filter === button));
+          });
+          historyStatus.textContent = "";
+          renderTournaments();
+        });
+      });
+      document.getElementById("refreshTournaments").addEventListener("click", () => {
+        if (!document.getElementById("historyBackButton").hidden) backToTournamentList();
+        loadTournaments();
+      });
+      document.getElementById("historyBackButton").addEventListener("click", backInHistory);
+      document.getElementById("historyPrev").addEventListener("click", () => {
+        if (historyPage > 0) {
+          historyPage--;
+          if (selectedSeriesMatches.length) renderSeriesMaps();
+          else renderHistoryMatches(selectedTournament);
+        }
+      });
+      document.getElementById("historyNext").addEventListener("click", () => {
+        if (historyPage + 1 < historyPageCount) {
+          historyPage++;
+          if (selectedSeriesMatches.length) renderSeriesMaps();
+          else renderHistoryMatches(selectedTournament);
+        }
+      });
+      tg?.BackButton?.onClick(handleBack);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && currentView === "live" && !busy) loadMatches();
+      });
+      loadTournaments();
+      window.setInterval(() => {
+        if (currentView === "live") loadMatches();
+      }, 30_000);
+    })();
+  </script>
+</body>
+</html>

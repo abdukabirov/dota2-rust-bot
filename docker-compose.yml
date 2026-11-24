@@ -1,0 +1,11 @@
+services:
+  dota2-bot-rust:
+    build:
+      context: .
+    env_file: .env
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+    volumes:
+      - ./data:/app/data
